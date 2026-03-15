@@ -298,13 +298,24 @@ SECTORS = {
     "Energy":  ["RELIANCE","ONGC","NTPC","POWERGRID"],
 }
 
-PT = dict(
-    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(color="#8b93b3", family="DM Mono, monospace", size=11),
-    xaxis=dict(gridcolor="rgba(99,132,199,0.08)", linecolor="rgba(0,0,0,0)", tickcolor="rgba(0,0,0,0)"),
-    yaxis=dict(gridcolor="rgba(99,132,199,0.08)", linecolor="rgba(0,0,0,0)", tickcolor="rgba(0,0,0,0)"),
-    margin=dict(l=50, r=20, t=30, b=40),
-)
+GRID = dict(gridcolor="rgba(99,132,199,0.08)", linecolor="rgba(0,0,0,0)", tickcolor="rgba(0,0,0,0)")
+
+def theme(fig, height=300, **kwargs):
+    """Apply consistent dark theme to any plotly figure without key conflicts."""
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#8b93b3", family="DM Mono, monospace", size=11),
+        margin=dict(l=50, r=20, t=30, b=40),
+        height=height,
+        **kwargs
+    )
+    fig.update_xaxes(gridcolor="rgba(99,132,199,0.08)", linecolor="rgba(0,0,0,0)", tickcolor="rgba(0,0,0,0)")
+    fig.update_yaxes(gridcolor="rgba(99,132,199,0.08)", linecolor="rgba(0,0,0,0)", tickcolor="rgba(0,0,0,0)")
+    return fig
+
+# Keep PT as empty dict for any legacy references
+PT = {}
 
 # ── DATA LAYER ────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)
@@ -483,7 +494,7 @@ if page == PAGES[0]:
             fig.add_trace(go.Scatter(x=df_n.index, y=df_n["Close"], mode="lines",
                                      line=dict(color=lc, width=2),
                                      fill="tozeroy", fillcolor=f"rgba{(34,200,122,0.07) if is_up else (240,82,82,0.07)}"))
-            fig.update_layout(**PT, height=300, showlegend=False)
+            theme(fig, height=300, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
 
     with col_r:
@@ -525,7 +536,7 @@ if page == PAGES[0]:
             fig_p=go.Figure(go.Pie(labels=["Advances","Declines","Unchanged"],values=[adv,dec,unc],
                                    marker_colors=["#22c87a","#f05252","#5a6285"],hole=0.62,textinfo="label+value",
                                    textfont=dict(size=11)))
-            fig_p.update_layout(**PT,height=240,showlegend=False,
+            theme(fig_p, height=240, showlegend=False,
                                 annotations=[dict(text=f"{adv}/{len(df_q)}",x=0.5,y=0.5,font_size=16,showarrow=False,font_color="#e8eaf0")])
             st.plotly_chart(fig_p, use_container_width=True)
 
@@ -559,8 +570,7 @@ elif page == PAGES[1]:
             if "Volume" in df.columns:
                 clrs=["#22c87a" if c>=o else "#f05252" for c,o in zip(df["Close"],df["Open"])]
                 fig.add_trace(go.Bar(x=df.index,y=df["Volume"],marker_color=clrs,opacity=0.6),row=2,col=1)
-            layout = dict(PT); layout["xaxis2"]=PT["xaxis"].copy(); layout["yaxis2"]=PT["yaxis"].copy()
-            fig.update_layout(**layout,height=480,showlegend=False,xaxis_rangeslider_visible=False)
+            theme(fig, height=480, showlegend=False, xaxis_rangeslider_visible=False)
             st.plotly_chart(fig, use_container_width=True)
         st.markdown('<div class="section-hdr">Technical Summary</div>', unsafe_allow_html=True)
         df_y = get_ohlc(sym,"1y","1d")
@@ -598,7 +608,7 @@ elif page == PAGES[2]:
                 cmin=-3,cmid=0,cmax=3,
                 colorbar=dict(title="Chg%",tickfont=dict(color="#8b93b3"),bgcolor="rgba(0,0,0,0)",bordercolor="rgba(0,0,0,0)")),
             pathbar_visible=False,textfont=dict(family="DM Mono",size=11,color="#e8eaf0")))
-        fig.update_layout(**PT,height=520,margin=dict(l=0,r=0,t=0,b=0))
+        theme(fig, height=520, margin=dict(l=0,r=0,t=0,b=0))
         st.plotly_chart(fig, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -665,7 +675,8 @@ elif page == PAGES[3]:
             marker_color=["#22c87a" if s["score"]>75 else "#f5a623" if s["score"]>60 else "#f05252" for s in sugs],
             text=[f"{s['score']}%" for s in sugs],textposition="outside",marker_line_width=0,
         ))
-        fig.update_layout(**PT,height=220,showlegend=False,yaxis=dict(range=[0,105],gridcolor="rgba(99,132,199,0.08)"))
+        theme(fig, height=220, showlegend=False)
+        fig.update_yaxes(range=[0,105])
         st.plotly_chart(fig, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -694,7 +705,7 @@ elif page == PAGES[4]:
         fig1.add_trace(go.Scatter(x=df.index,y=bm,line=dict(color="#f5a623",width=1.5,dash="dash"),name="SMA20"))
         fig1.add_trace(go.Scatter(x=df.index,y=bl,line=dict(color="rgba(34,200,122,.35)",width=1,dash="dot"),fill="tonexty",fillcolor="rgba(78,140,255,.04)",name="Lower"))
         fig1.add_trace(go.Scatter(x=df.index,y=cl,line=dict(color="#4e8cff",width=2),name="Price"))
-        fig1.update_layout(**PT,height=300,showlegend=False)
+        theme(fig1, height=300, showlegend=False)
         st.plotly_chart(fig1,use_container_width=True)
         c_rsi,c_macd=st.columns(2)
         with c_rsi:
@@ -703,7 +714,8 @@ elif page == PAGES[4]:
             fig2.add_trace(go.Scatter(x=df.index,y=r,line=dict(color="#7b6cff",width=2),fill="tozeroy",fillcolor="rgba(123,108,255,0.06)"))
             fig2.add_hline(y=70,line_dash="dot",line_color="rgba(240,82,82,.5)")
             fig2.add_hline(y=30,line_dash="dot",line_color="rgba(34,200,122,.5)")
-            fig2.update_layout(**PT,height=220,yaxis=dict(range=[0,100]),showlegend=False)
+            theme(fig2, height=220, showlegend=False)
+            fig2.update_yaxes(range=[0,100])
             st.plotly_chart(fig2,use_container_width=True)
         with c_macd:
             st.markdown('<div class="section-hdr">MACD</div>',unsafe_allow_html=True)
@@ -711,7 +723,7 @@ elif page == PAGES[4]:
             fig3.add_trace(go.Bar(x=df.index,y=mh,marker_color=["#22c87a" if v>=0 else "#f05252" for v in mh],opacity=0.7))
             fig3.add_trace(go.Scatter(x=df.index,y=ml,line=dict(color="#4e8cff",width=2)))
             fig3.add_trace(go.Scatter(x=df.index,y=ms,line=dict(color="#f5a623",width=1.5,dash="dash")))
-            fig3.update_layout(**PT,height=220,showlegend=False)
+            theme(fig3, height=220, showlegend=False)
             st.plotly_chart(fig3,use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -735,7 +747,7 @@ elif page == PAGES[5]:
                        dict(range=[65,100],color="rgba(34,200,122,.12)")],
                 threshold=dict(line=dict(color="#4e8cff",width=2),thickness=0.75,value=50)),
             number=dict(suffix="%",font=dict(color="#e8eaf0",family="DM Mono"))))
-        fig_g.update_layout(**PT,height=260)
+        theme(fig_g, height=260)
         st.plotly_chart(fig_g,use_container_width=True)
         st.caption(f"Bullish: {bullish}% · Neutral: {100-bullish-bearish}% · Bearish: {bearish}%")
     with c2:
@@ -804,9 +816,10 @@ elif page == PAGES[6]:
                 lc="#22c87a" if is_up else "#f05252"
                 fig_w=go.Figure(go.Scatter(y=df_w["Close"],mode="lines",line=dict(color=lc,width=1.5),
                                            fill="tozeroy",fillcolor=f"rgba{(34,200,122,0.06) if is_up else (240,82,82,0.06)}"))
-                fig_w.update_layout(**PT,height=110,xaxis=dict(visible=False),yaxis=dict(visible=False),
-                                    margin=dict(l=0,r=0,t=24,b=0),
+                theme(fig_w, height=110, margin=dict(l=0,r=0,t=24,b=0),
                                     title=dict(text=sym,font=dict(size=12,color="#e8eaf0"),x=0.05))
+                fig_w.update_xaxes(visible=False)
+                fig_w.update_yaxes(visible=False)
                 sp_cols[i].plotly_chart(fig_w,use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -914,7 +927,7 @@ elif page == PAGES[8]:
                 fig_bt=go.Figure()
                 fig_bt.add_trace(go.Scatter(x=eq.index,y=eq,mode="lines",name="Strategy",line=dict(color="#4e8cff",width=2)))
                 fig_bt.add_trace(go.Scatter(x=bh.index,y=bh,mode="lines",name="Buy & Hold",line=dict(color="#5a6285",width=1.5,dash="dash")))
-                fig_bt.update_layout(**PT,height=340,title=f"{bt_str} — {bt_sym}")
+                theme(fig_bt, height=340, title=f"{bt_str} — {bt_sym}")
                 st.plotly_chart(fig_bt,use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
